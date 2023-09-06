@@ -1,5 +1,12 @@
 import {Continents, Territories} from './data.js'
 
+const GAMESTATE = {
+    'FILLING_LOBBY': 0,
+    'STARTING_GAME': 1,
+    'PLAYING_GAME': 2,
+    'COMPLETED': 3,
+}
+
 export class Game {
     constructor(room_id) {
         this.room_id = room_id

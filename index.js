@@ -1,24 +1,21 @@
+import express from 'express'
+import cors from 'cors'
+// Game Imports
 import CONFIG from './config.js'
-import express from './node_modules/express/index.js'
-import cors from './node_modules/cors/lib/index.js'
+import GameRouter from './api/game.js'
 
 // Init Express API
 const app = express()
 const icors = cors()
 app.use(icors)
 
-// Game Dict
-const Games = {};
+// Add Paths
+app.use('/game', GameRouter)
 
-app.get('/newgame', (req, res) => {
-    // Create a new game and return the key
-})
 
+// Default Working
 app.get('/', (req, res) => {
-    const msg = `<h1>Hello World</h1>`;
-
-    res.status(200)
-    res.send(msg)
+    res.status(200).send(`<h1>Hello World</h1>`)
 })
 
 

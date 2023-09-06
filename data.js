@@ -384,11 +384,3 @@ export const Territories = [
         connections: [40, 41]
     },
 ]
-
-
-export const Player = {
-    id: 1,
-    username: "",
-    troops: 0,
-    deployable_troops: 0,
-}
