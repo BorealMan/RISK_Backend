@@ -1,23 +1,22 @@
 import express from 'express';
 import { randomUUID } from 'crypto'
 
-import Game from '../game.js'
+// Game Imports
+import Game from '../game/game.js'
+import GAMES from '../data/games.js'
 
 export const router = express.Router()
 
-// Game Dict
-export const Games = {};
-
 router.get("/", (req, res) => {
-    res.status(400).json({err: "Invalid Path"})
+    res.status(404).json({err: "Invalid Path"})
 })
 
 router.get('/newgame', (req, res) => {
     // Create a new game and return the key
     const key = randomUUID()
-    Games[key] = new Game(key)
+    GAMES[key] = new Game(key)
 
-    console.log(Games)
+    // console.log(GAMES)
 
     return res.status(200).json({key: key})
 })
@@ -25,13 +24,32 @@ router.get('/newgame', (req, res) => {
 router.get('/:key', (req, res) => {
     // Get Game
     const key = req.params['key']
-    const game = Games[key]
+    const game = GAMES[key]
     // Handle Invalid Key
     if (game === undefined) {
-        return res.status(404).json({err: "Invalid Game Key"})
+        return res.status(400).json({err: "Invalid Game Key"})
     }
     // Send Game Data
-    return res.status(200).json({game: Games[key]})
+    return res.status(200).json({game: GAMES[key]})
+})
+
+router.post('/:key/addplayer', (req, res) => {
+    // Get Game
+    const key = req.params['key']
+    const game = GAMES[key]
+    // Handle Invalid Key
+    if (game === undefined) {
+        return res.status(400).json({err: "Invalid Game Key"})
+    }
+    const username = req.body.username
+
+    if (username === undefined) return res.status(400).json({err: "Username Required"});
+
+    const result = game.addPlayer(username);
+
+    if (result.err !== undefined) return res.status(400).json({err: result.err})
+
+    return res.status(201).json({game: game});
 })
 
 export default router;

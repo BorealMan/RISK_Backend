@@ -1,4 +1,4 @@
-import {Continents, Territories} from './data.js'
+import {Continents, Territories} from '../data/data.js'
 
 const GAMESTATE = {
     'FILLING_LOBBY': 0,
@@ -10,9 +10,13 @@ const GAMESTATE = {
 export class Game {
     constructor(room_id) {
         this.room_id = room_id
-        this.continents = Continents;
-        this.territories = Territories;
+        this.gamestate = GAMESTATE.FILLING_LOBBY
         this.players = []
+        // Assign By Reference - Not Value
+        this.continents = {}
+        this.territories = {}
+        Object.assign(this.continents, Continents)
+        Object.assign(this.territories, Territories)
     }
 
     /* Player Functionality */
@@ -51,7 +55,7 @@ export class Game {
 
     /* Territory Functionalities */
     assignTerritory(id, playerID) {
-        this.territories[id-1].player = player_id;
+        this.territories[id-1].player = playerID;
     }
 
     assignContinent(id, playerID) {

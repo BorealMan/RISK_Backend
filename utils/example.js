@@ -2,6 +2,8 @@
     Big Picture View Of Game Objects - Data Structures
 */
 
+'https://ourgame.com/83930-dfnsd-sjfd90d9'
+
 const game = {
     continents: [{}],
     territories: [{}],
