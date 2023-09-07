@@ -12,7 +12,7 @@ export class Game {
         this.room_id = room_id
         this.gamestate = GAMESTATE.FILLING_LOBBY
         this.players = []
-        // Assign By Reference - Not Value
+        // Assign By Value - Not Reference
         this.continents = {}
         this.territories = {}
         Object.assign(this.continents, Continents)
