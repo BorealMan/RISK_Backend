@@ -7,6 +7,7 @@ const g = new Game("56")
 
 // Run Tests Here
 TestPlayerFunctionality()
+TerritoryTests()
 
 // Functions
 function TestPlayerFunctionality() {
@@ -57,6 +58,66 @@ function CreatePlayers() {
 }
 
 function DeletePlayers() {
+    let before_len = g.players.length;
+    if (DEBUG) {
+        console.log("Delete Test Output")
+        console.log(g.players)
+    }
+    // Expecting No Error
+    let err = g.removePlayer(3)
+    if (err !== undefined) return err;
 
-    return {err: "Delete Error"}
+    // Expecting Error
+    err = g.removePlayer(3)
+    if (err === undefined) return {err: "Expected Delete Error"}
+
+    if (DEBUG) console.log(g.players)
+    let after_len = g.players.length;
+
+    if (before_len < after_len) return {err: "Failed To Delete Player"}
+
+    // Delete All Players
+    g.removeAllPlayers();
+    
+    if (g.players.length > 0) return {err: "Failed To Remove All Players"}
+
+    return true
 }
+
+// Territory Tests
+function TerritoryTests() {
+    const errs = [];
+    // Create Player And Assign Territory
+    g.addPlayer("Ryan")
+    g.assignTerritory(1, 1);
+    if (g.territories[0].player !== 1) errs.push("Failed To Set Territory")
+
+    // Try To Assign OutSide Of Range - Expected To Fail
+    let err = g.assignTerritory(43, 1);
+    if (err === undefined) errs.push("Failed To Validate Territory Range");
+    err = g.assignTerritory(0, 1);
+    if (err === undefined) errs.push("Failed To Validate Territory Range");
+
+    // Try To Assign To Invalid Player - Expected To Fail
+    err = g.assignTerritory(2, 1);
+    if (err === undefined) errs.push("Failed To Validate Player Exists");
+
+    // Try To Assign To Dead Player - Expected To Fail
+    g.players[0].alive = false;
+    err = g.assignTerritory(1, 2);
+    if (err === undefined) errs.push("Failed To Validate Player Alive");
+
+    // Print Results
+    if (errs.length == 0) {
+        console.log("Passed Territory Functionality Tests")
+    } else {
+        console.log("Failed Territory Functionality Tests:")
+        errs.forEach( err => {
+            console.log(`\t- ${err}`)
+        })
+    }
+    g.reset();
+    return true
+}
+
+// Continent Tests

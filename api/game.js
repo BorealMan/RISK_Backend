@@ -45,11 +45,31 @@ router.post('/:key/addplayer', (req, res) => {
 
     if (username === undefined) return res.status(400).json({err: "Username Required"});
 
-    const result = game.addPlayer(username);
+    const result = game.addPlayer(username)
 
     if (result.err !== undefined) return res.status(400).json({err: result.err})
 
-    return res.status(201).json({game: game});
+    return res.status(201).json({game: game})
+})
+
+router.post(':key/removeplayer', (req, res) => {
+    // Get Game
+    const key = req.params['key']
+    const game = GAMES[key]
+    // Handle Invalid Key
+    if (game === undefined) {
+        return res.status(400).json({err: "Invalid Game Key"})
+    }
+
+    const id = req.body.id
+
+    if (id === undefined) return res.status(400).json({err: result.err})
+
+    const result = game.removePlayer(id)
+
+    if (result.err !== undefined) return res.status(400).json({err: result.err})
+
+    return res.status(201).json({game:game})
 })
 
 export default router;
