@@ -129,7 +129,7 @@ export class Game {
         if (p_id === undefined) return 0; // Shouldn't Be Possible
         for (let i = territoryStartID+1;i < territoryEndID;i++) {
             if (p_id !== this.territories[i].player) {
-                return this.continents[continentID-1].player = undefined; // Reset continent
+                return resetContinent(continentID)
             }
         }
         return this.assignContinent(continentID, p_id);
