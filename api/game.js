@@ -16,9 +16,9 @@ router.get('/newgame', (req, res) => {
     const key = randomUUID()
     GAMES[key] = new Game(key)
 
-    // console.log(GAMES)
+    console.log(GAMES)
 
-    return res.status(200).json({key: key})
+    return res.status(200).json({game: GAMES[key]})
 })
 
 router.get('/:key', (req, res) => {

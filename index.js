@@ -20,6 +20,10 @@ app.use('/game', GameRouter)
 
 app.ws('/', (ws, req) => {
 
+    ws.on('open', (msg) => {
+        console.log(`New Client Connected ${msg}`)
+    })
+
     ws.on('message', (msg) => {
         
         if (msg.username == "Ryan") {

@@ -15,10 +15,11 @@ export class Game {
     currentPlayerTurn = 1;
     players = [];
     moveTime = 90; // Seconds
+    timeIsUp = false;
     // Data 
     continents = {};
     territories = {};
-    messages = {};
+    // messages = {};
 
     constructor(room_id) {
         this.room_id = room_id
@@ -32,6 +33,7 @@ export class Game {
     // Returns Error If Failed, True If Successful
     addPlayer(username) {
         if (this.gameState !== GAMESTATE.FILLING_LOBBY) return {err: "Cannot Add New Players Anymore"}
+        if (this.players.length > 6) return {err: "Lobby Is Full"}
         let new_id = this.players.length + 1;
         // Validate 
         // Greater than 12 or Less than 1 fails
@@ -54,6 +56,7 @@ export class Game {
         player.id = new_id;
         player.username = username;
         player.alive = true;
+        player.cards = [];
         player.troops = 10;
         player.deployable_troops = 10;
         this.players.push(player)
@@ -158,7 +161,7 @@ export class Game {
     reset() {
         this.gameState = GAMESTATE.FILLING_LOBBY
         this.players = [];
-        this.messages = {};
+        // this.messages = {};
         // Assign By Value - Not Reference
         Object.assign(this.continents, Continents)
         Object.assign(this.territories, Territories)
