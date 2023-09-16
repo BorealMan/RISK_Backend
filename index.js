@@ -1,39 +1,34 @@
 import express from 'express'
 import cors from 'cors'
-import expressWS from 'express-ws'
+import { createServer } from 'node:http';
+import { Server } from 'socket.io';
 // Game Imports
 import CONFIG from './config.js'
 import GameRouter from './api/game.js'
 
 // Init Express API
 const app = express()
-const icors = cors()
-app.use(icors)
+app.use(cors())
 app.use(express.json())
 
-// Initalize WebSocket
-expressWS(app)
+// Initalize Socket.io
+const server = createServer(app);
+const io = new Server(server)
 
 // Add Paths
-app.use('/game', GameRouter)
+// app.use('/game', GameRouter)
 
 
-app.ws('/', (ws, req) => {
+// Testing Socket.io
+io.on('connection', (socket) => {
+    console.log(`A New User Connected`)
 
-    ws.on('open', (msg) => {
-        console.log(`New Client Connected ${msg}`)
-    })
-
-    ws.on('message', (msg) => {
-        
-        if (msg.username == "Ryan") {
-            return ws.send("Hello Ryan")
-        }
-
-        return ws.send(msg)
+    socket.on('disconnect', (socket) => {
+        console.log(`A User Disconnected`)
     })
 
 })
+
 
 // Default Working
 app.get('/', (req, res) => {
@@ -41,6 +36,6 @@ app.get('/', (req, res) => {
 })
 
 
-app.listen(CONFIG.PORT, () => {
+server.listen(CONFIG.PORT, () => {
     console.log(`Listening at http://localhost:${CONFIG.PORT}`)
 })
