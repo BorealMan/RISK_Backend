@@ -13,18 +13,54 @@ app.use(express.json())
 
 // Initalize Socket.io
 const server = createServer(app);
-const io = new Server(server)
+const io = new Server(server, {
+    cors: {
+        origin: '*'
+    }
+})
+
 
 // Add Paths
 // app.use('/game', GameRouter)
-
 
 // Testing Socket.io
 io.on('connection', (socket) => {
     console.log(`A New User Connected`)
 
-    socket.on('disconnect', (socket) => {
+    socket.on('disconnect', () => {
         console.log(`A User Disconnected`)
+    })
+
+    socket.on('newgame', () => {
+        const payload = {
+            Game: {
+                id: 'a7821'
+            }
+        }
+        // socket.join(payload.Game.id);
+        socket.emit('newgame', payload)
+    })
+
+    socket.on('joingame', (gameid) => {
+        const payload = {
+            Game: {
+                id: 'a7821'
+            }
+        }
+    })
+
+    socket.on('addplayer', (roomid) => {
+
+    })
+
+    socket.on('message', (msg) => {
+        console.log(`Message Event: ${msg}`)
+        // socket.broadcast.emit('message', msg)
+        io.emit('message', msg)
+    })
+
+    socket.on('sync', () => {
+
     })
 
 })
