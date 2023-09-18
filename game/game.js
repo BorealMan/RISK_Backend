@@ -8,8 +8,9 @@ const GAMESTATE = {
 }
 
 export class Game {
+    nextID = 1; // Used To Assign New Player IDs
     // Game Details
-    rooomID = undefined
+    gameID = undefined
     gameState = undefined;
     // Player
     currentPlayerTurn = 1;
@@ -21,8 +22,8 @@ export class Game {
     territories = {};
     // messages = {};
 
-    constructor(room_id) {
-        this.room_id = room_id
+    constructor(gameID) {
+        this.gameID = gameID
         this.gameState = GAMESTATE.FILLING_LOBBY
         // Assign By Value - Not Reference
         Object.assign(this.continents, Continents)
@@ -30,11 +31,10 @@ export class Game {
     }
 
     /* Player Functionality */
-    // Returns Error If Failed, True If Successful
+    // Returns Error If Failed, Player Object If Successful
     addPlayer(username) {
         if (this.gameState !== GAMESTATE.FILLING_LOBBY) return {err: "Cannot Add New Players Anymore"}
         if (this.players.length > 6) return {err: "Lobby Is Full"}
-        let new_id = this.players.length + 1;
         // Validate 
         // Greater than 12 or Less than 1 fails
         if (username.length > 12 || username.length <= 1) {
@@ -43,9 +43,6 @@ export class Game {
         // Check Username & ID is Unique
         let err = undefined
         this.players.forEach( player => {
-            if (new_id === player.id) {
-                err = {err: `Duplicate Player ID: ${new_id}`}
-            }
             if (player.username === username) {
                 err = {err: `Username ${username} Already In Use`};
             }
@@ -53,28 +50,28 @@ export class Game {
         if (err !== undefined) return err
         // Create New Player Object
         let player = {}
-        player.id = new_id;
+        player.id = this.nextID;
         player.username = username;
         player.alive = true;
         player.cards = [];
         player.troops = 10;
         player.deployable_troops = 10;
         this.players.push(player)
-        return true
+        this.nextID++;
+        return player
     }
 
     removePlayer(id) {
         if (this.gameState !== GAMESTATE.FILLING_LOBBY) return {err: "Cannot Remove Players Anymore"}
         if (this.players.length < 1) return {err: "No Players"}
-        if (this.players[id-1] === undefined) return {err: `No Player With ID: ${id}`}
-        // Remove That Player
-        this.players.splice(id-1, 1);
-        // Reassign Leftover Players IDs in Order
-        let i = 1;
-        this.players.forEach(player => {
-            player.id = i
-            i++; 
+        const index = this.players.findIndex( player => {
+            return player.id == id;
         })
+        // Not Found Check
+        if (index == -1) return {err: "Player Doesn't Exist"}
+        // Remove That Player
+        this.players.splice(index, 1)
+        return true
     }
 
     removeAllPlayers() {
