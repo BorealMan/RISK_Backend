@@ -63,7 +63,7 @@ io.on('connection', (socket) => {
         }
         // Try To Create New Player
         const player = GAMES[gameid].addPlayer(username);
-        if (player.err !== undefined) return socket.emit('joingame', player.err);
+        if (player.err !== undefined) return socket.emit('joingame', {err: player.err});
         socket.join(gameid);
         return socket.emit('joingame', {player_id: player.id, game: game})
     })
