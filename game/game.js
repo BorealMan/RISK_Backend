@@ -8,32 +8,36 @@ const GAMESTATE = {
 }
 
 export class Game {
-    nextID = 1; // Used To Assign New Player IDs
+    next_id = 1; // Used To Assign New Player IDs
     // Game Details
-    gameID = undefined
-    gameState = undefined;
+    game_id = undefined
+    game_state = undefined;
     // Player
-    currentPlayerTurn = 1;
+    current_player_turn = 1;
     players = [];
-    moveTime = 90; // Seconds
-    timeIsUp = false;
+    move_time = 90; // Seconds
+    time_is_up = false;
     // Data 
     continents = {};
     territories = {};
     // messages = {};
+    created_at = undefined
 
-    constructor(gameID) {
-        this.gameID = gameID
-        this.gameState = GAMESTATE.FILLING_LOBBY
+    constructor(game_id) {
+        this.game_id = game_id
+        this.game_state = GAMESTATE.FILLING_LOBBY
         // Assign By Value - Not Reference
         Object.assign(this.continents, Continents)
         Object.assign(this.territories, Territories)
+        // Unix Timestamp
+        let time = new Date();
+        this.created_at = time.getTime();
     }
 
     /* Player Functionality */
     // Returns Error If Failed, Player Object If Successful
     addPlayer(username) {
-        if (this.gameState !== GAMESTATE.FILLING_LOBBY) return {err: "Cannot Add New Players Anymore"}
+        if (this.game_state !== GAMESTATE.FILLING_LOBBY) return {err: "Cannot Add New Players Anymore"}
         if (this.players.length > 6) return {err: "Lobby Is Full"}
         // Validate 
         // Greater than 12 or Less than 1 fails
@@ -50,19 +54,19 @@ export class Game {
         if (err !== undefined) return err
         // Create New Player Object
         let player = {}
-        player.id = this.nextID;
+        player.id = this.next_id;
         player.username = username;
         player.alive = true;
         player.cards = [];
         player.troops = 10;
         player.deployable_troops = 10;
         this.players.push(player)
-        this.nextID++;
+        this.next_id++;
         return player
     }
 
     removePlayer(id) {
-        if (this.gameState !== GAMESTATE.FILLING_LOBBY) return {err: "Cannot Remove Players Anymore"}
+        if (this.game_state !== GAMESTATE.FILLING_LOBBY) return {err: "Cannot Remove Players Anymore"}
         if (this.players.length < 1) return {err: "No Players"}
         const index = this.players.findIndex( player => {
             return player.id == id;
@@ -114,7 +118,7 @@ export class Game {
             Australia      39 - 42
     */
     calculateOwnsContinents() {
-        if (this.gameState !== GAMESTATE.PLAYING_GAME) return {err: "Can Only Calculate Continent Owners While Game Is Playing"}
+        if (this.game_state !== GAMESTATE.PLAYING_GAME) return {err: "Can Only Calculate Continent Owners While Game Is Playing"}
         calculateOwnsContinent(1, 0, 8);  // NA
         calculateOwnsContinent(2, 9, 12); // SA
         calculateOwnsContinent(3, 13, 19);// EU
@@ -156,7 +160,7 @@ export class Game {
 
     // Util
     reset() {
-        this.gameState = GAMESTATE.FILLING_LOBBY
+        this.game_state = GAMESTATE.FILLING_LOBBY
         this.players = [];
         // this.messages = {};
         // Assign By Value - Not Reference

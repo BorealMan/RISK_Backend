@@ -37,14 +37,16 @@ io.on('connection', (socket) => {
     })
 
     socket.on('newgame', (username) => {
+        if (CONFIG.DEBUG) console.log(`Creating New Game - Username: ${username}\n`)
+        if (username == null) return socket.emit('newgame', {err: "Username Required"})
         // Generate New ID, Create New Game, Add Game To Memory
         const newid = randomUUID()
-        if (CONFIG.DEBUG) console.log(`Creating New Game With ID: ${newid}\n`)
         const game = new Game(newid)
-        GAMES[newid] = game;
         // Create New Player, Return On Error
         const player = game.addPlayer(username)
         if (player.err !== undefined) return socket.emit('newgame', player.err);
+        // Add Game To Memory
+        GAMES[newid] = game;
         // Join Socket Room, Send Game And Player
         socket.join(newid);
         return socket.emit('newgame', {player_id: player.id, game: game})
@@ -52,6 +54,8 @@ io.on('connection', (socket) => {
 
     socket.on('joingame', (gameid, username) => {
         if (CONFIG.DEBUG) console.log(`Joining Game:\nId: ${gameid}\nUsername: ${username}\n`)
+        if (gameid == null) return socket.emit('newgame', {err: "Game Id Required"})
+        if (username == null) return socket.emit('newgame', {err: "Username Required"})
         // Get Game, Check That It Exists
         const game = GAMES[gameid]
         if (game === undefined) {
