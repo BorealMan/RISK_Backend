@@ -1,4 +1,4 @@
-import {Continents, Territories} from '../data/data.js'
+import { Continents, Territories } from '../data/data.js'
 
 const GAMESTATE = {
     'FILLING_LOBBY': 0,
@@ -6,6 +6,8 @@ const GAMESTATE = {
     'PLAYING_GAME': 2,
     'COMPLETED': 3,
 }
+
+const AVAILABLE_COLORS = ["Red", "Blue", "Green", "Yellow", "Purple", "Orange"];
 
 export class Game {
     next_id = 1; // Used To Assign New Player IDs
@@ -37,25 +39,31 @@ export class Game {
     /* Player Functionality */
     // Returns Error If Failed, Player Object If Successful
     addPlayer(username) {
-        if (this.game_state !== GAMESTATE.FILLING_LOBBY) return {err: "Cannot Add New Players Anymore"}
-        if (this.players.length > 6) return {err: "Lobby Is Full"}
+        if (this.game_state !== GAMESTATE.FILLING_LOBBY) return { err: "Cannot Add New Players Anymore" }
+        if (this.players.length > 6) return { err: "Lobby Is Full" }
         // Validate 
         // Greater than 12 or Less than 1 fails
         if (username.length > 12 || username.length <= 1) {
-            return {err: "Invalid Username Length"};
-        } 
+            return { err: "Invalid Username Length" };
+        }
         // Check Username & ID is Unique
         let err = undefined
-        this.players.forEach( player => {
+        this.players.forEach(player => {
             if (player.username === username) {
-                err = {err: `Username ${username} Already In Use`};
+                err = { err: `Username ${username} Already In Use` };
             }
         })
         if (err !== undefined) return err
+
+        // Assign unique colors
+        const colorIndex = Math.floor(Math.random() * AVAILABLE_COLORS.length);
+        const color = AVAILABLE_COLORS.splice(colorIndex, 1)[0];
+
         // Create New Player Object
         let player = {}
         player.id = this.next_id;
         player.username = username;
+        player.color = color;
         player.alive = true;
         player.cards = [];
         player.troops = 10;
@@ -66,13 +74,13 @@ export class Game {
     }
 
     removePlayer(id) {
-        if (this.game_state !== GAMESTATE.FILLING_LOBBY) return {err: "Cannot Remove Players Anymore"}
-        if (this.players.length < 1) return {err: "No Players"}
-        const index = this.players.findIndex( player => {
+        if (this.game_state !== GAMESTATE.FILLING_LOBBY) return { err: "Cannot Remove Players Anymore" }
+        if (this.players.length < 1) return { err: "No Players" }
+        const index = this.players.findIndex(player => {
             return player.id == id;
         })
         // Not Found Check
-        if (index == -1) return {err: "Player Doesn't Exist"}
+        if (index == -1) return { err: "Player Doesn't Exist" }
         // Remove That Player
         this.players.splice(index, 1)
         return true
@@ -84,26 +92,26 @@ export class Game {
 
     /* Territory Functionalities */
     assignTerritory(id, playerID) {
-        if (id < 1 || id > 42) return {err: "Invalid Territory ID"}
-        if (this.players[id-1] === undefined) return {err: "Player Does Not Exist"}
-        if (!this.players[id-1].alive) return {err: "Player Is Dead!"}
-        this.territories[id-1].player = playerID;
+        if (id < 1 || id > 42) return { err: "Invalid Territory ID" }
+        if (this.players[id - 1] === undefined) return { err: "Player Does Not Exist" }
+        if (!this.players[id - 1].alive) return { err: "Player Is Dead!" }
+        this.territories[id - 1].player = playerID;
     }
 
     resetTerritory(id) {
-        if (id < 1 || id > 42) return {err: "Invalid Territory ID"}
-        this.territories[id-1].player = undefined;
+        if (id < 1 || id > 42) return { err: "Invalid Territory ID" }
+        this.territories[id - 1].player = undefined;
     }
 
     // Continent Functionalities
     assignContinent(id, playerID) {
-        if (id < 1 || id > 6) return {err: "Invalid Continent ID"}
-        this.continents[id-1].player = playerID
+        if (id < 1 || id > 6) return { err: "Invalid Continent ID" }
+        this.continents[id - 1].player = playerID
     }
 
     resetContinent(id) {
-        if (id < 1 || id > 6) return {err: "Invalid Continent ID"}
-        this.continents[id-1].player = undefined;
+        if (id < 1 || id > 6) return { err: "Invalid Continent ID" }
+        this.continents[id - 1].player = undefined;
     }
     /*  
         Loop Through Territories And Check If A Player 
@@ -118,7 +126,7 @@ export class Game {
             Australia      39 - 42
     */
     calculateOwnsContinents() {
-        if (this.game_state !== GAMESTATE.PLAYING_GAME) return {err: "Can Only Calculate Continent Owners While Game Is Playing"}
+        if (this.game_state !== GAMESTATE.PLAYING_GAME) return { err: "Can Only Calculate Continent Owners While Game Is Playing" }
         calculateOwnsContinent(1, 0, 8);  // NA
         calculateOwnsContinent(2, 9, 12); // SA
         calculateOwnsContinent(3, 13, 19);// EU
@@ -131,7 +139,7 @@ export class Game {
     calculateOwnsContinent(continentID, territoryStartID, territoryEndID) {
         let p_id = this.territories[territoryStartID].player;
         if (p_id === undefined) return 0; // Shouldn't Be Possible
-        for (let i = territoryStartID+1;i < territoryEndID;i++) {
+        for (let i = territoryStartID + 1; i < territoryEndID; i++) {
             if (p_id !== this.territories[i].player) {
                 return resetContinent(continentID)
             }
@@ -141,19 +149,19 @@ export class Game {
 
     /* Printing Functions */
     printPlayers() {
-        this.players.forEach( player => {
+        this.players.forEach(player => {
             console.log(player);
         })
     }
 
     printTerritories() {
-        this.territories.forEach( territory => {
+        this.territories.forEach(territory => {
             console.log(territory)
         })
     }
 
     printContinents() {
-        this.continents.forEach( c => {
+        this.continents.forEach(c => {
             console.log(c)
         })
     }
