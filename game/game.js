@@ -7,8 +7,6 @@ const GAMESTATE = {
     'COMPLETED': 3,
 }
 
-const AVAILABLE_COLORS = ["Red", "Blue", "Green", "Yellow", "Purple", "Orange"];
-
 export class Game {
     next_id = 1; // Used To Assign New Player IDs
     // Game Details
@@ -24,6 +22,7 @@ export class Game {
     territories = {};
     // messages = {};
     created_at = undefined
+    AVAILABLE_COLORS = ["Red", "Blue", "Green", "Yellow", "Purple", "Orange"];
 
     constructor(game_id) {
         this.game_id = game_id
@@ -56,8 +55,8 @@ export class Game {
         if (err !== undefined) return err
 
         // Assign unique colors
-        const colorIndex = Math.floor(Math.random() * AVAILABLE_COLORS.length);
-        const color = AVAILABLE_COLORS.splice(colorIndex, 1)[0];
+        const colorIndex = Math.floor(Math.random() * this.AVAILABLE_COLORS.length);
+        const color = this.AVAILABLE_COLORS.splice(colorIndex, 1)[0];
 
         // Create New Player Object
         let player = {}
@@ -70,6 +69,7 @@ export class Game {
         player.deployable_troops = 10;
         this.players.push(player)
         this.next_id++;
+        console.log(this.AVAILABLE_COLORS);
         return player
     }
 
