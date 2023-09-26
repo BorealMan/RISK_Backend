@@ -69,7 +69,6 @@ export class Game {
         player.deployable_troops = 10;
         this.players.push(player)
         this.next_id++;
-        console.log(this.AVAILABLE_COLORS);
         return player
     }
 
