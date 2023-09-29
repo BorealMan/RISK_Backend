@@ -4,8 +4,8 @@ import { createServer } from 'node:http';
 import { Server } from 'socket.io';
 // Game Imports
 import CONFIG from './config.js'
-// import GameRouter from './api/game.js'
 import { randomUUID } from 'crypto'
+import { GAMESTATE } from './game/game.js';
 
 // Init Express API
 const app = express()
@@ -65,8 +65,8 @@ io.on('connection', (socket) => {
         const player = GAMES[gameid].addPlayer(username);
         if (player.err !== undefined) return socket.emit('joingame', {err: player.err});
         socket.join(gameid);
-        // return io.to(gameid).broadcast.emit({player_id: player.id, game: game})
-        io.sockets.emit('playerjoined', {player_id: player.id, game: game});
+        // Send Just To Players In That Room
+        io.to(gameid).emit('playerjoined', {players: game.players})
         return socket.emit('joingame', {player_id: player.id, game: game})
     })
 
@@ -82,17 +82,28 @@ io.on('connection', (socket) => {
             return socket.emit('leavegame', result.err);
         }
         socket.leave(gameid);
+        // io.
         return socket.emit('leavegame', 'Success')
     })
 
     socket.on('message', (gameid, playerid, message) => {
         if (CONFIG.DEBUG) console.log(`PlayerId: ${playerid}`)
         if (CONFIG.DEBUG) console.log(`Message Event: ${message}\n`)
-        return io.sockets.emit('message', {playerid: playerid, message: message});
+        return io.to(gameid).emit('message', {playerid: playerid, message: message})
     })
 
-    socket.on('sync', (gameid) => {
-
+    socket.on('startgame', (gameid) => {
+        if (CONFIG.DEBUG) console.log(`Starting Game: ${gameid}\n`);
+        // Get Game, Check That It Exists
+        const game = GAMES[gameid]
+        if (game === undefined) {
+            return socket.emit('startgame', {err: `Game Doesn't Exist`});
+        }
+        if (game.game_state != GAMESTATE.FILLING_LOBBY) {
+            return socket.emit('startgame', {err: "Game Cannot Be Started Right Now"})
+        }
+        GAMES[gameid].game_state = GAMESTATE.STARTING_GAME
+        return io.to(gameid).emit('startgame', {game_state: GAMESTATE.STARTING_GAME})
     })
 
 })

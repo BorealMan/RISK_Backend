@@ -1,7 +1,7 @@
 import Game from '../game/game.js'
 
 /* Testing Game Functionalities */
-const DEBUG = false;
+const DEBUG = true;
 
 const g = new Game("56")
 

@@ -1,6 +1,6 @@
 import { Continents, Territories } from '../data/data.js'
 
-const GAMESTATE = {
+export const GAMESTATE = {
     'FILLING_LOBBY': 0,
     'STARTING_GAME': 1,
     'PLAYING_GAME': 2,
@@ -8,19 +8,18 @@ const GAMESTATE = {
 }
 
 export class Game {
-    next_id = 1; // Used To Assign New Player IDs
+    next_id = 0; // Used To Assign New Player IDs
     // Game Details
     game_id = undefined
     game_state = undefined;
     // Player
-    current_player_turn = 1;
+    current_player_turn = 0;
     players = [];
     move_time = 90; // Seconds
     time_is_up = false;
     // Data 
     continents = {};
     territories = {};
-    // messages = {};
     created_at = undefined
     AVAILABLE_COLORS = ["Red", "Blue", "Green", "Yellow", "Purple", "Orange"];
 
@@ -62,11 +61,17 @@ export class Game {
         let player = {}
         player.id = this.next_id;
         player.username = username;
+        player.party_leader = false;
         player.color = color;
         player.alive = true;
         player.cards = [];
         player.troops = 10;
         player.deployable_troops = 10;
+        // Party Leader Logic
+        if (this.next_id == 0) {
+            player.party_leader = true;
+        }
+        // Pushing Player
         this.players.push(player)
         this.next_id++;
         return player
@@ -82,6 +87,10 @@ export class Game {
         if (index == -1) return { err: "Player Doesn't Exist" }
         // Remove That Player
         this.players.splice(index, 1)
+        // Reassign Party Leader if Needed
+        if (this.players[index].party_leader && this.players.length > 1) {
+            this.players[0].party_leader = true;
+        }
         return true
     }
 
@@ -92,9 +101,9 @@ export class Game {
     /* Territory Functionalities */
     assignTerritory(id, playerID) {
         if (id < 1 || id > 42) return { err: "Invalid Territory ID" }
-        if (this.players[id - 1] === undefined) return { err: "Player Does Not Exist" }
-        if (!this.players[id - 1].alive) return { err: "Player Is Dead!" }
-        this.territories[id - 1].player = playerID;
+        if (this.players[id] === undefined) return { err: "Player Does Not Exist" }
+        if (!this.players[id].alive) return { err: "Player Is Dead!" }
+        this.territories[id].player = playerID;
     }
 
     resetTerritory(id) {
@@ -169,10 +178,14 @@ export class Game {
     reset() {
         this.game_state = GAMESTATE.FILLING_LOBBY
         this.players = [];
-        // this.messages = {};
         // Assign By Value - Not Reference
         Object.assign(this.continents, Continents)
         Object.assign(this.territories, Territories)
+    }
+
+    async Run() {
+        // Do Game Stuff
+
     }
 }
 
