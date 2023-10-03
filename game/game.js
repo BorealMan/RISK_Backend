@@ -85,12 +85,18 @@ export class Game {
         })
         // Not Found Check
         if (index == -1) return { err: "Player Doesn't Exist" }
-        // Remove That Player
-        this.players.splice(index, 1)
         // Reassign Party Leader if Needed
-        if (this.players[index].party_leader && this.players.length > 1) {
-            this.players[0].party_leader = true;
-        }
+        // if (this.players[index].party_leader && this.players.length > 1) {
+        //     this.AVAILABLE_COLORS.push(this.players[index].color);
+        //     this.players.splice(index, 1);
+        //     this.players[0].party_leader = true;
+        // }
+        this.players.splice(index, 1);
+        this.players.forEach((player, i) => {
+            player.id = i
+        });
+        this.next_id = this.players.length
+        // Remove That Player
         return true
     }
 
