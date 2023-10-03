@@ -91,12 +91,13 @@ export class Game {
         //     this.players.splice(index, 1);
         //     this.players[0].party_leader = true;
         // }
+
+        this.AVAILABLE_COLORS.push(this.players[index].color);
         this.players.splice(index, 1);
         this.players.forEach((player, i) => {
             player.id = i
         });
         this.next_id = this.players.length
-        // Remove That Player
         return true
     }
 
