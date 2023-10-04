@@ -95,8 +95,11 @@ export class Game {
         this.AVAILABLE_COLORS.push(this.players[index].color);
         this.players.splice(index, 1);
         this.players.forEach((player, i) => {
-            player.id = i
+            player.id = i;
+            player.party_leader = false;
         });
+
+        this.players[0].party_leader = true;
         this.next_id = this.players.length
         return true
     }

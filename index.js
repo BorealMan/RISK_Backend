@@ -82,8 +82,8 @@ io.on('connection', (socket) => {
             return socket.emit('leavegame', result.err);
         }
         socket.leave(gameid);
-        io.to(gameid).emit('player_left', { players: game.players });
-        return socket.emit('leavegame', { game: game, player_id: playerid })
+        io.to(gameid).emit('player_left', { players: game.players, player_id: playerid });
+        return socket.emit('leavegame', 0);
     })
 
     socket.on('message', (gameid, playerid, message) => {
