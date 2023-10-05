@@ -37,67 +37,77 @@ export class Game {
     /* Player Functionality */
     // Returns Error If Failed, Player Object If Successful
     addPlayer(username) {
-        if (this.game_state !== GAMESTATE.FILLING_LOBBY) return { err: "Cannot Add New Players Anymore" }
-        if (this.players.length > 6) return { err: "Lobby Is Full" }
-        // Validate 
-        // Greater than 12 or Less than 1 fails
-        if (username.length > 12 || username.length <= 1) {
-            return { err: "Invalid Username Length" };
-        }
-        // Check Username & ID is Unique
-        let err = undefined
-        this.players.forEach(player => {
-            if (player.username === username) {
-                err = { err: `Username ${username} Already In Use` };
+        try {
+            if (this.game_state !== GAMESTATE.FILLING_LOBBY) return { err: "Cannot Add New Players Anymore" }
+            if (this.players.length > 6) return { err: "Lobby Is Full" }
+            // Validate 
+            // Greater than 12 or Less than 1 fails
+            if (username.length > 12 || username.length <= 1) {
+                return { err: "Invalid Username Length" };
             }
-        })
-        if (err !== undefined) return err
-
-        // Assign unique colors
-        const colorIndex = Math.floor(Math.random() * this.AVAILABLE_COLORS.length);
-        const color = this.AVAILABLE_COLORS.splice(colorIndex, 1)[0];
-
-        // Create New Player Object
-        let player = {}
-        player.id = this.next_id;
-        player.username = username;
-        player.party_leader = false;
-        player.color = color;
-        player.alive = true;
-        player.cards = [];
-        player.troops = 10;
-        player.deployable_troops = 10;
-        // Party Leader Logic
-        if (this.next_id == 0) {
-            player.party_leader = true;
+            // Check Username & ID is Unique
+            let err = undefined
+            this.players.forEach(player => {
+                if (player.username === username) {
+                    err = { err: `Username ${username} Already In Use` };
+                }
+            })
+            if (err !== undefined) return err
+    
+            // Assign unique colors
+            const colorIndex = Math.floor(Math.random() * this.AVAILABLE_COLORS.length);
+            const color = this.AVAILABLE_COLORS.splice(colorIndex, 1)[0];
+    
+            // Create New Player Object
+            let player = {}
+            player.id = this.next_id;
+            player.username = username;
+            player.party_leader = false;
+            player.color = color;
+            player.alive = true;
+            player.cards = [];
+            player.troops = 10;
+            player.deployable_troops = 10;
+            // Party Leader Logic
+            if (this.next_id == 0) {
+                player.party_leader = true;
+            }
+            // Pushing Player
+            this.players.push(player)
+            this.next_id++;
+            return player
+        } catch (err) {
+            console.log(err)
+            return {err: err}
         }
-        // Pushing Player
-        this.players.push(player)
-        this.next_id++;
-        return player
     }
 
     removePlayer(id) {
-        if (this.game_state !== GAMESTATE.FILLING_LOBBY) return { err: "Cannot Remove Players Anymore" }
-        if (this.players.length < 1) return { err: "No Players" }
-        const index = this.players.findIndex(player => {
-            return player.id == id;
-        })
-        // Not Found Check
-        if (index == -1) return { err: "Player Doesn't Exist" }
-        // Add Colors Back
-        this.AVAILABLE_COLORS.push(this.players[index].color);
-        // Remove The Player
-        this.players.splice(index, 1);
-        // Reassign Player IDs
-        this.players.forEach((player, i) => {
-            player.id = i;
-            player.party_leader = false;
-        });
-        // Reassign Party Leader if Lobby Not Empty
-        if (this.players.length > 0) this.players[0].party_leader = true;
-        this.next_id = this.players.length
-        return true
+        try {
+            if (this.game_state !== GAMESTATE.FILLING_LOBBY) return { err: "Cannot Remove Players Anymore" }
+            if (this.players.length < 1) return { err: "No Players" }
+            const index = this.players.findIndex(player => {
+                return player.id == id;
+            })
+            // Not Found Check
+            if (index == -1) return { err: "Player Doesn't Exist" }
+            // Add Colors Back
+            this.AVAILABLE_COLORS.push(this.players[index].color);
+            // Remove The Player
+            this.players.splice(index, 1);
+            // Reassign Player IDs
+            this.players.forEach((player, i) => {
+                player.id = i;
+                player.party_leader = false;
+            });
+            // Reassign Party Leader if Lobby Not Empty
+            if (this.players.length > 0) this.players[0].party_leader = true;
+            this.next_id = this.players.length
+            return true
+        } catch(err) {
+            console.log(err)
+            return {err: err}
+        }
     }
 
     removeAllPlayers() {
