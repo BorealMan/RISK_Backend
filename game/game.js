@@ -36,10 +36,11 @@ export class Game {
 
     /* Player Functionality */
     // Returns Error If Failed, Player Object If Successful
-    addPlayer(username) {
+    addPlayer(username, socketid) {
         try {
             if (this.game_state !== GAMESTATE.FILLING_LOBBY) return { err: "Cannot Add New Players Anymore" }
             if (this.players.length > 6) return { err: "Lobby Is Full" }
+            if (socketid === undefined) return {err: "Error Setting Socket"}
             // Validate 
             // Greater than 12 or Less than 1 fails
             if (username.length > 12 || username.length <= 1) {
@@ -61,6 +62,7 @@ export class Game {
             // Create New Player Object
             let player = {}
             player.id = this.next_id;
+            player.socketid = socketid
             player.username = username;
             player.party_leader = false;
             player.color = color;
@@ -107,6 +109,16 @@ export class Game {
         } catch(err) {
             console.log(err)
             return {err: err}
+        }
+    }
+
+    playerDisconnected(socketid) {
+        for (const player of this.players) {
+            if (player.socketid == socketid) {
+                const tmp = player.id
+                this.removePlayer(player.id)
+                return tmp
+            }
         }
     }
 

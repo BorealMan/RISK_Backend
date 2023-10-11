@@ -32,80 +32,127 @@ import { GAMES, RemoveDeadGames } from './data/games.js'
 io.on('connection', (socket) => {
     if (CONFIG.DEBUG) console.log(`A New User Connected\n`)
 
-    socket.on('disconnect', () => {
-        if (CONFIG.DEBUG) console.log(`A User Disconnected\n`)
+    socket.on('disconnecting', () => {
+        try {
+            if (CONFIG.DEBUG) console.log(`Disconnecting\n`)
+            // Only If Socket Is In A Game
+            if (socket.rooms.size > 1) {
+                // Leave The Game - socket.rooms is a set and working with it sucks 
+                let index = 0;
+                let gameid = undefined
+                for (const room of socket.rooms) {
+                    if (index == socket.rooms.size-1) {
+                        gameid = room
+                    }
+                    ++index
+                }
+                const playerid = GAMES[gameid].playerDisconnected(socket.id)
+                if (CONFIG.DEBUG) console.log(`Player ${playerid} is leaving game: ${gameid}\n`)
+                return io.to(gameid).emit('player_left', { players: GAMES[gameid].players, player_id: playerid });
+            }
+        } catch(err) {
+            if (CONFIG.DEBUG) console.log(`Error: Disconnect: ${err}\n`)
+        }
     })
 
     socket.on('newgame', (username) => {
-        if (CONFIG.DEBUG) console.log(`Creating New Game - Username: ${username}\n`)
-        if (username == null) return socket.emit('newgame', { err: "Username Required" })
-        // Generate New ID, Create New Game, Add Game To Memory
-        const newid = randomUUID()
-        const game = new Game(newid)
-        // Create New Player, Return On Error
-        const player = game.addPlayer(username)
-        if (player.err !== undefined) return socket.emit('newgame', player.err);
-        // Add Game To Memory
-        GAMES[newid] = game;
-        // Join Socket Room, Send Game And Player
-        socket.join(newid);
-        return socket.emit('newgame', { player_id: player.id, game: game })
+        try {
+            if (CONFIG.DEBUG) console.log(`Creating New Game - Username: ${username}\n`)
+            if (username == null) return socket.emit('newgame', { err: "Username Required" })
+            // Generate New ID, Create New Game, Add Game To Memory
+            const newid = randomUUID()
+            const game = new Game(newid)
+            // Create New Player, Return On Error
+            if (CONFIG.DEBUG) console.log(`Started New Game, Socket ID: ${socket.id}`) 
+            const player = game.addPlayer(username, socket.id)
+            if (player.err !== undefined) return socket.emit('newgame', player.err);
+            // Add Game To Memory
+            GAMES[newid] = game;
+            // Join Socket Room, Send Game And Player
+            socket.join(newid);
+            return socket.emit('newgame', { player_id: player.id, game: game })
+        } catch(err) {
+            if (CONFIG.DEBUG) console.log(`Error: New Game: ${err}\n`)
+        }
     })
 
     socket.on('joingame', (gameid, username) => {
-        if (CONFIG.DEBUG) console.log(`Joining Game:\nId: ${gameid}\nUsername: ${username}\n`)
-        if (gameid == null) return socket.emit('newgame', { err: "Game Id Required" })
-        if (username == null) return socket.emit('newgame', { err: "Username Required" })
-        // Get Game, Check That It Exists
-        const game = GAMES[gameid]
-        if (game === undefined) {
-            return socket.emit('joingame', { err: `Game Doesn't Exist` });
+        try {
+            if (CONFIG.DEBUG) console.log(`Joining Game:\nId: ${gameid}\nUsername: ${username}\n`)
+            if (gameid == null) return socket.emit('newgame', { err: "Game Id Required" })
+            if (username == null) return socket.emit('newgame', { err: "Username Required" })
+            // Get Game, Check That It Exists
+            const game = GAMES[gameid]
+            if (game === undefined) {
+                return socket.emit('joingame', { err: `Game Doesn't Exist` });
+            }
+            // Try To Create New Player
+            if (CONFIG.DEBUG) console.log(`Joined Game, Socket ID: ${socket.id}`) 
+            const player = GAMES[gameid].addPlayer(username, socket.id);
+            if (player.err !== undefined) return socket.emit('joingame', { err: player.err });
+            socket.join(gameid);
+            // Send Just To Players In That Room
+            io.to(gameid).emit('playerjoined', { players: game.players })
+            return socket.emit('joingame', { player_id: player.id, game: game })
+        } catch(err) {
+            if (CONFIG.DEBUG) console.log(`Error: Join Game: ${err}\n`)
         }
-        // Try To Create New Player
-        const player = GAMES[gameid].addPlayer(username);
-        if (player.err !== undefined) return socket.emit('joingame', { err: player.err });
-        socket.join(gameid);
-        // Send Just To Players In That Room
-        io.to(gameid).emit('playerjoined', { players: game.players })
-        return socket.emit('joingame', { player_id: player.id, game: game })
+
     })
 
     socket.on('leavegame', (gameid, playerid) => {
-        if (CONFIG.DEBUG) console.log(`Leaving Game\nGameId: ${gameid}\nPlayerId: ${playerid}\n`)
-        // Get Game, Check That It Exists
-        const game = GAMES[gameid]
-        if (game === undefined) {
-            return socket.emit('joingame', { err: `Game Doesn't Exist` });
+        try {
+            if (CONFIG.DEBUG) console.log(`Leaving Game\nGameId: ${gameid}\nPlayerId: ${playerid}\n`)
+            // Get Game, Check That It Exists
+            const game = GAMES[gameid]
+            if (game === undefined) {
+                return socket.emit('joingame', { err: `Game Doesn't Exist` });
+            }
+            if (CONFIG.DEBUG) console.log(`Left Game, Socket ID: ${socket.id}`) 
+            const result = GAMES[gameid].removePlayer(playerid);
+            if (result.err !== undefined) {
+                return socket.emit('leavegame', result.err);
+            }
+            if (CONFIG.DEBUG) {
+                socket.rooms.forEach( room => {
+                    console.log(`RoomId: ${room}`)
+                })
+            }
+            socket.leave(gameid);
+            io.to(gameid).emit('player_left', { players: game.players, player_id: playerid });
+            return socket.emit('leavegame', 0);
+        } catch(err) {
+            if (CONFIG.DEBUG) console.log(`Error: Leaving Game: ${err}\n`)
         }
-        const result = GAMES[gameid].removePlayer(playerid);
-        if (result.err !== undefined) {
-            return socket.emit('leavegame', result.err);
-        }
-        socket.leave(gameid);
-        io.to(gameid).emit('player_left', { players: game.players, player_id: playerid });
-        return socket.emit('leavegame', 0);
     })
 
     socket.on('message', (gameid, playerid, message) => {
-        if (CONFIG.DEBUG) console.log(`PlayerId: ${playerid}`)
-        if (CONFIG.DEBUG) console.log(`Message Event: ${message}\n`)
-        return io.to(gameid).emit('message', { playerid: playerid, message: message })
+        try {
+            if (CONFIG.DEBUG) console.log(`PlayerId: ${playerid}`)
+            if (CONFIG.DEBUG) console.log(`Message Event: ${message}\n`)
+            return io.to(gameid).emit('message', { playerid: playerid, message: message })
+        } catch(err) {
+            if (CONFIG.DEBUG) console.log(`Error: Message: ${err}\n`)
+        }
     })
 
     socket.on('startgame', (gameid) => {
-        if (CONFIG.DEBUG) console.log(`Starting Game: ${gameid}\n`);
-        // Get Game, Check That It Exists
-        const game = GAMES[gameid]
-        if (game === undefined) {
-            return socket.emit('startgame', { err: `Game Doesn't Exist` });
+        try {
+            if (CONFIG.DEBUG) console.log(`Starting Game: ${gameid}\n`);
+            // Get Game, Check That It Exists
+            const game = GAMES[gameid]
+            if (game === undefined) {
+                return socket.emit('startgame', { err: `Game Doesn't Exist` });
+            }
+            if (game.game_state != GAMESTATE.FILLING_LOBBY) {
+                return socket.emit('startgame', { err: "Game Cannot Be Started Right Now" })
+            }
+            GAMES[gameid].game_state = GAMESTATE.STARTING_GAME
+            return io.to(gameid).emit('startgame', { game_state: GAMESTATE.STARTING_GAME })
+        } catch(err) {
+            if (CONFIG.DEBUG) console.log(`Error: Starting Game: ${err}\n`)
         }
-        if (game.game_state != GAMESTATE.FILLING_LOBBY) {
-            return socket.emit('startgame', { err: "Game Cannot Be Started Right Now" })
-        }
-        GAMES[gameid].game_state = GAMESTATE.STARTING_GAME
-        return io.to(gameid).emit('startgame', { game_state: GAMESTATE.STARTING_GAME })
     })
-
 })
 
 
