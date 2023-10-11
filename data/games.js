@@ -16,9 +16,12 @@ export async function RemoveDeadGames() {
     if (DEBUG) console.log('Running: Remove Dead Games Process')
     const keys = Object.keys(GAMES)
     if (DEBUG) console.log(keys)
+    // Define Now In Unix Time
+    const d = new Date();
+    const t = d.getTime();
     // Current Unix Time
     keys.forEach( key => {
-        if (GAMES[key].players.length < 1 || compareTimes(GAMES[key].created_at)) {
+        if (GAMES[key].players.length < 1 || compareTimes(GAMES[key].created_at, t)) {
             if (DEBUG) console.log(`Deleting Game: ${key}`)
             delete GAMES[key];
         }
@@ -28,9 +31,7 @@ export async function RemoveDeadGames() {
 
 
 const MAX_GAME_DURATION = 3600 * 6; // 6 Hours In Seconds
-function compareTimes(created_at) {
-    const d = new Date();
-    const t = d.getTime();
+function compareTimes(created_at, t) {
     const diff = (t - created_at) / 1000;
     if (DEBUG) console.log(`\nTime Comparison:\nCreated At: ${created_at}\nCurrent Time: ${t}\nDiff: ${diff}\n`)
     if (diff  >= MAX_GAME_DURATION) {
