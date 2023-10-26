@@ -227,7 +227,6 @@ export class Game {
         GameServer.to(this.game_id).emit('message', { playerid: -1, message: "Game Clock Is Working!" })
         // Do Game Stuff
         while(this.game_state !== GAMESTATE.COMPLETED) {
-            GameServer.to(this.game_id).emit('message', { playerid: -1, message: "Game Clock Is Working!" })
             // Process Turn
 
             // Game Clock - 1 Second / FPS
