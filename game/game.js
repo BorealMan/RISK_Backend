@@ -1,3 +1,5 @@
+import { GetUnixTime, UnixTimeDiff, Sleep } from '../utils/time.js';
+
 import { Continents, Territories } from '../data/data.js'
 
 export const GAMESTATE = {
@@ -211,9 +213,26 @@ export class Game {
         Object.assign(this.territories, Territories)
     }
 
-    async Run() {
-        // Do Game Stuff
+    ProcessTurn(GameServer) {
+        // Create A Loop That Lasts move_time Seconds
+        const now = GetUnixTime()
+        while(true) {
+    
+        }
+        const currentTime = new Date() 
+    }
 
+    async Run(GameServer) {
+        const ClockSpeed = 30 // 30 FPS 
+        GameServer.to(this.game_id).emit('message', { playerid: -1, message: "Game Clock Is Working!" })
+        // Do Game Stuff
+        while(this.game_state !== GAMESTATE.COMPLETED) {
+            GameServer.to(this.game_id).emit('message', { playerid: -1, message: "Game Clock Is Working!" })
+            // Process Turn
+
+            // Game Clock - 1 Second / FPS
+            await Sleep(1000/ClockSpeed)
+        }
     }
 }
 

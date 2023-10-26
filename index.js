@@ -148,7 +148,10 @@ io.on('connection', (socket) => {
                 return socket.emit('startgame', { err: "Game Cannot Be Started Right Now" })
             }
             GAMES[gameid].game_state = GAMESTATE.STARTING_GAME
-            return io.to(gameid).emit('startgame', { game_state: GAMESTATE.STARTING_GAME })
+            // Emit Start Game Signal
+            io.to(gameid).emit('startgame', { game_state: GAMESTATE.STARTING_GAME })
+            // Start Game Server - Passing io 
+            GAMES[gameid].Run(io)
         } catch(err) {
             if (CONFIG.DEBUG) console.log(`Error: Starting Game: ${err}\n`)
         }
