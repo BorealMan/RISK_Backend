@@ -1,4 +1,4 @@
-import { GetUnixTime, UnixTimeDiff, Sleep } from '../utils/time.js';
+import { GetUnixTime, UnixTimeSince, Sleep } from '../utils/time.js';
 
 import { Continents, Territories } from '../data/data.js'
 
@@ -9,6 +9,13 @@ export const GAMESTATE = {
     'COMPLETED': 3,
 }
 
+export const PLAYER_TURN_STATE = {
+    'NOT_TURN': 0,
+    'DRAFT': 1,
+    'ATTACK': 2,
+    'REINFORCE': 3,
+}
+
 export class Game {
     next_id = 0; // Used To Assign New Player IDs
     // Game Details
@@ -17,8 +24,8 @@ export class Game {
     // Player
     current_player_turn = 0;
     players = [];
-    move_time = 90; // Seconds
-    time_is_up = false;
+    player_turn_max_duration = 30; // Seconds
+    current_turn_start = undefined
     // Data 
     continents = {};
     territories = {};
@@ -32,8 +39,7 @@ export class Game {
         Object.assign(this.continents, Continents)
         Object.assign(this.territories, Territories)
         // Unix Timestamp
-        let time = new Date();
-        this.created_at = time.getTime();
+        this.created_at = GetUnixTime();
     }
 
     /* Player Functionality */
@@ -72,6 +78,7 @@ export class Game {
             player.cards = [];
             player.troops = 10;
             player.deployable_troops = 10;
+            player.turn_state = PLAYER_TURN_STATE.NOT_TURN
             // Party Leader Logic
             if (this.next_id == 0) {
                 player.party_leader = true;
@@ -213,24 +220,69 @@ export class Game {
         Object.assign(this.territories, Territories)
     }
 
-    ProcessTurn(GameServer) {
-        // Create A Loop That Lasts move_time Seconds
-        const now = GetUnixTime()
-        while(true) {
-    
+    /* 
+        Game Logic
+            Flow: 
+
+    */
+    CurrentPlayerTurnTimedOut(GameServer) {
+        const diff = UnixTimeSince(this.current_turn_start)
+        if (diff > this.player_turn_max_duration) {
+            // Increment Player Turn
+            this.players[this.current_player_turn].turn_state = PLAYER_TURN_STATE.NOT_TURN;
+
+            this.current_player_turn = (this.current_player_turn + 1) % this.players.length
+            this.players[this.current_player_turn].turn_state = PLAYER_TURN_STATE.DRAFT;
+            this.current_turn_start = GetUnixTime();
+            // Reset Seconds Into Turn
+            GameServer.to(this.game_id).emit('increment_timer', {seconds: 0})
+            return true;
         }
-        const currentTime = new Date() 
+        // Send Seconds Into Turn
+        GameServer.to(this.game_id).emit('increment_timer', {seconds: diff})
+        return false;
+    }
+
+    ProcessTurn(GameServer) {
+        // If Player Is Over Maximum Turn Duration
+        if (this.CurrentPlayerTurnTimedOut(GameServer)) {
+            GameServer.to(this.game_id).emit('increment_turn', {current_player_turn: this.current_player_turn})
+            return
+        }
+        const currentPlayer = this.players[this.current_player_turn];
+        // Turn Phases
+        if (currentPlayer.turn_state == PLAYER_TURN_STATE.DRAFT) {
+
+        }
+        else if (currentPlayer.turn_state == PLAYER_TURN_STATE.ATTACK) {
+
+        }
+        else if (currentPlayer.turn_state == PLAYER_TURN_STATE.REINFORCE) {
+            
+        }
     }
 
     async Run(GameServer) {
-        const ClockSpeed = 30 // 30 FPS 
+        const FPS = 60 
+        const ClockRate =  1000/FPS // ms/FPS
         GameServer.to(this.game_id).emit('message', { playerid: -1, message: "Game Clock Is Working!" })
-        // Do Game Stuff
-        while(this.game_state !== GAMESTATE.COMPLETED) {
-            // Process Turn
+        // Set Current Turn Timer
+        this.current_turn_start = GetUnixTime();
+        // Socket Events From Client
+        GameServer.on('place_troops', (player_id, territory_id) => {
 
-            // Game Clock - 1 Second / FPS
-            await Sleep(1000/ClockSpeed)
+        })
+        // Game Logic
+        while(this.game_state !== GAMESTATE.COMPLETED) {
+            this.ProcessTurn(GameServer)
+            // Game States
+            if (this.game_state === GAMESTATE.STARTING_GAME) {
+
+            } 
+            else if (this.game_state === GAMESTATE.PLAYING_GAME) {
+
+            }
+            await Sleep(ClockRate)
         }
     }
 }
