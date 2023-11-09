@@ -24,11 +24,11 @@ export class Game {
     // Player
     current_player_turn = 0;
     players = [];
-    player_turn_max_duration = 30; // Seconds
+    player_turn_max_duration = 70; // Seconds
     current_turn_start = undefined
     // Data 
-    continents = {};
-    territories = {};
+    continents = [];
+    territories = [];
     created_at = undefined
     AVAILABLE_COLORS = ["Red", "Blue", "Green", "Yellow", "Purple", "Orange"];
 
@@ -76,8 +76,8 @@ export class Game {
             player.color = color;
             player.alive = true;
             player.cards = [];
-            player.troops = 10;
-            player.deployable_troops = 10;
+            player.troops = 20;
+            player.deployable_troops = 20;
             player.turn_state = PLAYER_TURN_STATE.NOT_TURN
             // Party Leader Logic
             if (this.next_id == 0) {
@@ -137,10 +137,52 @@ export class Game {
 
     /* Territory Functionalities */
     assignTerritory(id, playerID) {
-        if (id < 1 || id > 42) return { err: "Invalid Territory ID" }
+        if (id < 0 || id > 41) return { err: "Invalid Territory ID" }
         if (this.players[id] === undefined) return { err: "Player Does Not Exist" }
         if (!this.players[id].alive) return { err: "Player Is Dead!" }
         this.territories[id].player = playerID;
+    }
+
+    // Before Start Of Game, Assign Each Territory and All Player Troops To A Territory
+    RandomlyAssignTerritories(GameServer) {
+        const territories = Array.from(Array(42).keys())
+        let p_index = 0;
+        // Select Random Territory Until None Left
+        // Select Players In Order and Put One Troop On Territory
+        while(territories.length > 0) {
+            const player = this.players[p_index]
+            // Get A Territory ID
+            const index = Math.floor(Math.random() * territories.length);
+            const t_index = territories.splice(index, 1)
+            const territory = this.territories[t_index]
+            // Assign Territory
+            territory.player = player.id
+            territory.troops = 1
+            // Adjust Values
+            player.deployable_troops -= 1
+            p_index = (p_index + 1) % this.players.length
+        }
+        this.players.forEach( player => {
+            // Get All Territories Owned
+            const territoriesOwned = []
+            this.territories.forEach( (t, i) => {
+                if (t.player == player.id) {
+                    territoriesOwned.push(i)
+                }
+            })
+            console.log(territoriesOwned)
+            // Assign Troops Randomly To Territory Until None Left
+            while(player.deployable_troops > 0) {
+                const index = Math.floor(Math.random() * territoriesOwned.length)
+                const t_index = territoriesOwned[index]
+                const territory = this.territories[t_index]
+                territory.troops += 1
+                player.deployable_troops -= 1
+            }
+        })
+        // console.log(this.territories)
+        this.calculateOwnsContinents()
+        GameServer.to(this.game_id).emit('update_territories', {territories: this.territories, players: this.players, continents: this.continents})
     }
 
     resetTerritory(id) {
@@ -172,12 +214,12 @@ export class Game {
     */
     calculateOwnsContinents() {
         if (this.game_state !== GAMESTATE.PLAYING_GAME) return { err: "Can Only Calculate Continent Owners While Game Is Playing" }
-        calculateOwnsContinent(1, 0, 8);  // NA
-        calculateOwnsContinent(2, 9, 12); // SA
-        calculateOwnsContinent(3, 13, 19);// EU
-        calculateOwnsContinent(4, 20, 25);// AF
-        calculateOwnsContinent(5, 26, 38);// Asia
-        calculateOwnsContinent(6, 39, 42);// AU
+        calculateOwnsContinent(0, 0, 8);  // NA
+        calculateOwnsContinent(1, 9, 12); // SA
+        calculateOwnsContinent(2, 13, 19);// EU
+        calculateOwnsContinent(3, 20, 25);// AF
+        calculateOwnsContinent(4, 26, 38);// Asia
+        calculateOwnsContinent(5, 39, 42);// AU
     }
 
     // Pass Which Continent And The Range They Are In
@@ -246,42 +288,21 @@ export class Game {
     ProcessTurn(GameServer) {
         // If Player Is Over Maximum Turn Duration
         if (this.CurrentPlayerTurnTimedOut(GameServer)) {
-            GameServer.to(this.game_id).emit('increment_turn', {current_player_turn: this.current_player_turn})
-            return
-        }
-        const currentPlayer = this.players[this.current_player_turn];
-        // Turn Phases
-        if (currentPlayer.turn_state == PLAYER_TURN_STATE.DRAFT) {
-
-        }
-        else if (currentPlayer.turn_state == PLAYER_TURN_STATE.ATTACK) {
-
-        }
-        else if (currentPlayer.turn_state == PLAYER_TURN_STATE.REINFORCE) {
-            
+            return GameServer.to(this.game_id).emit('increment_turn', {current_player_turn: this.current_player_turn})
         }
     }
 
     async Run(GameServer) {
         const FPS = 60 
         const ClockRate =  1000/FPS // ms/FPS
-        GameServer.to(this.game_id).emit('message', { playerid: -1, message: "Game Clock Is Working!" })
         // Set Current Turn Timer
         this.current_turn_start = GetUnixTime();
-        // Socket Events From Client
-        GameServer.on('place_troops', (player_id, territory_id) => {
-
-        })
-        // Game Logic
+        // Randomly Assign Territories To Players
+        this.RandomlyAssignTerritories(GameServer)
+        // Socket Events
+        // Game Logic - Game Clock
         while(this.game_state !== GAMESTATE.COMPLETED) {
             this.ProcessTurn(GameServer)
-            // Game States
-            if (this.game_state === GAMESTATE.STARTING_GAME) {
-
-            } 
-            else if (this.game_state === GAMESTATE.PLAYING_GAME) {
-
-            }
             await Sleep(ClockRate)
         }
     }
