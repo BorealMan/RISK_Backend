@@ -78,6 +78,7 @@ export class Game {
             player.cards = [];
             player.troops = 20;
             player.deployable_troops = 20;
+            player.territories = 0
             player.turn_state = PLAYER_TURN_STATE.NOT_TURN
             // Party Leader Logic
             if (this.next_id == 0) {
@@ -135,6 +136,11 @@ export class Game {
         this.players = [];
     }
 
+    Update() {
+        this.calculateOwnsContinents()
+        this.countPlayerTerritories()
+    }
+
     /* Territory Functionalities */
     assignTerritory(id, playerID) {
         if (id < 0 || id > 41) return { err: "Invalid Territory ID" }
@@ -144,7 +150,7 @@ export class Game {
     }
 
     // Before Start Of Game, Assign Each Territory and All Player Troops To A Territory
-    RandomlyAssignTerritories(GameServer) {
+    randomlyAssignTerritories(GameServer) {
         const territories = Array.from(Array(42).keys())
         let p_index = 0;
         // Select Random Territory Until None Left
@@ -170,7 +176,7 @@ export class Game {
                     territoriesOwned.push(i)
                 }
             })
-            console.log(territoriesOwned)
+            // console.log(territoriesOwned)
             // Assign Troops Randomly To Territory Until None Left
             while(player.deployable_troops > 0) {
                 const index = Math.floor(Math.random() * territoriesOwned.length)
@@ -181,8 +187,17 @@ export class Game {
             }
         })
         // console.log(this.territories)
-        this.calculateOwnsContinents()
+        this.Update()
         GameServer.to(this.game_id).emit('update_territories', {territories: this.territories, players: this.players, continents: this.continents})
+    }
+
+    countPlayerTerritories() {
+        this.players.forEach( player => {
+            player.territories = 0
+        })
+        this.territories.forEach( territory => {
+            this.players[territory.player].territories += 1
+        })
     }
 
     resetTerritory(id) {
@@ -298,7 +313,7 @@ export class Game {
         // Set Current Turn Timer
         this.current_turn_start = GetUnixTime();
         // Randomly Assign Territories To Players
-        this.RandomlyAssignTerritories(GameServer)
+        this.randomlyAssignTerritories(GameServer)
         // Socket Events
         // Game Logic - Game Clock
         while(this.game_state !== GAMESTATE.COMPLETED) {
