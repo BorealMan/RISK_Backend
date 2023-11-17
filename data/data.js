@@ -7,37 +7,42 @@ export const Continents = [
         name: "North America",
         territory_count: 9,
         player: undefined,
-        bonus: undefined
+        bonus: 5
     },
     {
         id: 1,
         name: "South America",
         territory_count: 4,
         player: undefined,
+        bonus: 2
     },
     {
         id: 2,
         name: "Europe",
         territory_count: 7,
         player: undefined,
+        bonus: 5
     },
     {
         id: 3,
         name: "Africa",
         territory_count: 6,
         player: undefined,
+        bonus: 3
     },
     {
         id: 4,
         name: "Asia",
         territory_count: 12,
         player: undefined,
+        bonus: 7
     },
     {
         id: 5,
         name: "Australia",
         territory_count: 4,
         player: undefined,
+        bonus: 2
     },
 ]
 

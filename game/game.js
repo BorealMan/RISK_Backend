@@ -250,35 +250,6 @@ export class Game {
         return this.assignContinent(continentID, p_id);
     }
 
-    getContinentTroopReward(continentID) {
-        let reward = 0
-        // NA
-        if (continentID == 0) {
-            reward += 5
-        }
-        // SA 
-        else if (continentID == 1) {
-            reward += 2
-        } 
-        // Africa
-        else if (continentID == 2) {
-            reward += 3
-        } 
-        // Europe
-        else if (continentID == 3) {
-            reward += 5
-        } 
-        // Asia 
-        else if (continentID == 4) {
-            reward += 7
-        }
-        // Australlia 
-        else if (continentID == 5) {
-            reward += 2
-        }
-        return reward
-    }
-
     /* Printing Functions */
     printPlayers() {
         this.players.forEach(player => {
@@ -334,11 +305,11 @@ export class Game {
         const player = this.players[this.current_player_turn]
         // Default Troop Reward
         const newTroops = Math.max(Math.floor(player.territories / 3), 3)
-        // Continent Troop Reward - TODO
+        // Continent Troop Reward 
         this.calculateOwnsContinents()
         this.continents.forEach( c => {
             if (c.player == player.id) {
-                newTroops += getContinentTroopReward(c.id)
+                newTroops += c.bonus
             }
         })
         // Update Player Values And Send
