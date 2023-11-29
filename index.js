@@ -170,11 +170,12 @@ io.on('connection', (socket) => {
     */
     socket.on('player_event', (gameid, payload) => {
         try {
-            GAMES[gameid].PlayerEvent(payload)
+            GAMES[gameid].playerEvent(payload)
         } catch (err) {
             if (CONFIG.DEBUG) console.log(`Game Event Error: ${err}\n`)
         }
     })
+
 })
 
 

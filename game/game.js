@@ -19,10 +19,12 @@ export const PLAYER_TURN_STATE = {
 export const PLAYER_EVENTS = {
     'DEPLOY_TROOPS': 0,
     'ATTACK': 1,
+    'NEXT_PHASE': 2,
 }
 
 export class Game {
     next_id = 0; // Used To Assign New Player IDs
+    total_turns = 0;
     // Game Details
     game_id = undefined
     game_state = undefined;
@@ -142,8 +144,8 @@ export class Game {
     }
 
     Update() {
-        this.calculateOwnsContinents()
         this.countPlayerTerritories()
+        this.calculateOwnsContinents()
     }
 
     /* Territory Functionalities */
@@ -191,8 +193,6 @@ export class Game {
                 player.deployable_troops -= 1
             }
         })
-        // this.GameServer.to(this.game_id).emit('update_territories', {territories: this.territories, players: this.players, continents: this.continents})
-        this.SendUpdateGameState()
     }
 
     countPlayerTerritories() {
@@ -205,20 +205,21 @@ export class Game {
     }
 
     resetTerritory(id) {
-        if (id < 1 || id > 42) return { err: "Invalid Territory ID" }
-        this.territories[id - 1].player = undefined;
+        if (id < 0 || id > 42) return { err: "Invalid Territory ID" }
+        this.territories[id].player = undefined;
     }
 
     // Continent Functionalities
     assignContinent(id, playerID) {
-        if (id < 1 || id > 6) return { err: "Invalid Continent ID" }
-        this.continents[id - 1].player = playerID
+        if (id < 0 || id > 5) return { err: "Invalid Continent ID" }
+        this.continents[id].player = playerID
     }
 
     resetContinent(id) {
-        if (id < 1 || id > 6) return { err: "Invalid Continent ID" }
-        this.continents[id - 1].player = undefined;
+        if (id < 0 || id > 5) return { err: "Invalid Continent ID" }
+        this.continents[id].player = undefined;
     }
+
     /*  
         Loop Through Territories And Check If A Player 
         Owns All Territories In One Of The Continents 
@@ -233,22 +234,22 @@ export class Game {
     */
     calculateOwnsContinents() {
         if (this.game_state !== GAMESTATE.PLAYING_GAME) return { err: "Can Only Calculate Continent Owners While Game Is Playing" }
-        calculateOwnsContinent(0, 0, 8);  // NA
-        calculateOwnsContinent(1, 9, 12); // SA
-        calculateOwnsContinent(2, 13, 19);// EU
-        calculateOwnsContinent(3, 20, 25);// AF
-        calculateOwnsContinent(4, 26, 38);// Asia
-        calculateOwnsContinent(5, 39, 42);// AU
+        this.calculateOwnsContinent(0, 0, 8);  // NA
+        this.calculateOwnsContinent(1, 9, 12); // SA
+        this.calculateOwnsContinent(2, 13, 19);// EU
+        this.calculateOwnsContinent(3, 20, 25);// AF
+        this.calculateOwnsContinent(4, 26, 38);// Asia
+        this.calculateOwnsContinent(5, 39, 42);// AU
     }
 
     // Pass Which Continent And The Range They Are In
     calculateOwnsContinent(continentID, territoryStartID, territoryEndID) {
         // console.log(`Owns Continent ${continentID} Start: ${territoryStartID} End: ${territoryEndID}`)
+        // Get Owner Of First Territory
         let p_id = this.territories[territoryStartID].player;
-        if (p_id === undefined) return 0; // Shouldn't Be Possible
         for (let i = territoryStartID; i < territoryEndID; i++) {
             if (p_id !== this.territories[i].player) {
-                return resetContinent(continentID)
+                return this.resetContinent(continentID)
             }
         }
         return this.assignContinent(continentID, p_id);
@@ -302,14 +303,6 @@ export class Game {
     CurrentPlayerTurnTimedOut() {
         const diff = UnixTimeSince(this.current_turn_start)
         if (diff > this.player_turn_max_duration) {
-            // Increment Player Turn
-            this.players[this.current_player_turn].turn_state = PLAYER_TURN_STATE.NOT_TURN;
-
-            this.current_player_turn = (this.current_player_turn + 1) % this.players.length
-            this.players[this.current_player_turn].turn_state = PLAYER_TURN_STATE.DRAFT;
-            this.current_turn_start = GetUnixTime();
-            // Reset Seconds Into Turn
-            this.GameServer.to(this.game_id).emit('increment_timer', {seconds: 0})
             return true;
         }
         // Send Seconds Into Turn
@@ -320,9 +313,8 @@ export class Game {
     playerRewardNewTroops() {
         const player = this.players[this.current_player_turn]
         // Default Troop Reward
-        const newTroops = Math.max(Math.floor(player.territories / 3), 3)
+        let newTroops = Math.max(Math.floor(player.territories / 3), 3)
         // Continent Troop Reward 
-        this.calculateOwnsContinents()
         this.continents.forEach( c => {
             if (c.player == player.id) {
                 newTroops += c.bonus
@@ -335,8 +327,16 @@ export class Game {
     }
 
     IncrementTurn() {
-        this.playerRewardNewTroops();
+        // Increment Player Turn
+        this.players[this.current_player_turn].turn_state = PLAYER_TURN_STATE.NOT_TURN;
+
+        this.current_player_turn = (this.current_player_turn + 1) % this.players.length
+        this.players[this.current_player_turn].turn_state = PLAYER_TURN_STATE.DRAFT;
+        this.current_turn_start = GetUnixTime();
+        // Reset Seconds Into Turn
+        this.GameServer.to(this.game_id).emit('increment_timer', {seconds: 0})
         this.GameServer.to(this.game_id).emit('increment_turn', {current_player_turn: this.current_player_turn})
+        this.playerRewardNewTroops();
     }
 
     ProcessTurn() {
@@ -355,22 +355,34 @@ export class Game {
             }
         }
     */    
-    PlayerEvent(payload) {
-        console.log(`New Player Event: ${payload}`)
-        try {
-            if (payload.type == PLAYER_EVENTS.DEPLOY_TROOPS) {
-                player = this.players[res.player_id]
-                territory = this.territories[res.territory_id]
-                if (res.deploy_troops <= player.deployable_troops && territory.player == player.id) {
-                    territory.troops += res.deploy_troops
-                    this.SendUpdateGameState();
-                }
-            } 
-            else if (payload.type == PLAYER_EVENTS.ATTACK) {
+    playerEvent(payload) {
+        console.log(`New Player Event: ${JSON.stringify(payload)}`)
 
+        if (payload.type == PLAYER_EVENTS.DEPLOY_TROOPS) {
+            const player = this.players[payload.player_id]
+            const territory = this.territories[payload.territory_id]
+            if (payload.deploy_troops <= player.deployable_troops && territory.player == player.id) {
+                territory.troops += payload.deploy_troops
+                player.deployable_troops -= payload.deploy_troops
+                return this.SendUpdateGameState();
             }
-        } catch(err) {
-            console.log(`Error: Game ${this.game_id} Unable To Process Payload`)
+        } 
+        else if (payload.type == PLAYER_EVENTS.ATTACK) {
+
+        }
+        else if (payload.type == PLAYER_EVENTS.NEXT_PHASE) {
+            const player = this.players[this.current_player_turn]
+            switch(player.turn_state) {
+                case PLAYER_TURN_STATE.DRAFT:
+                    player.turn_state = PLAYER_TURN_STATE.ATTACK
+                    break
+                case PLAYER_TURN_STATE.ATTACK:
+                    player.turn_state = PLAYER_TURN_STATE.REINFORCE
+                    break
+                case PLAYER_TURN_STATE.REINFORCE:
+                    return this.IncrementTurn() 
+            }
+            return this.SendUpdateGameState()
         }
     }
 
@@ -378,12 +390,14 @@ export class Game {
         this.GameServer = GameServer
         const FPS = 30 
         const ClockRate =  1000/FPS // ms/FPS
-        // Set Current Turn Timer
-        this.current_turn_start = GetUnixTime();
         // Randomly Assign Territories To Players
+        this.game_state = GAMESTATE.PLAYING_GAME
         this.randomlyAssignTerritories()
-        this.playerRewardNewTroops()
-        // Socket Events
+        this.SendUpdateGameState()
+        // Set First Players Turn
+        this.current_player_turn = this.players.length - 1
+        this.IncrementTurn()
+
         // Game Logic - Game Clock
         while(this.game_state !== GAMESTATE.COMPLETED) {
             this.ProcessTurn()
