@@ -16,6 +16,11 @@ export const PLAYER_TURN_STATE = {
     'REINFORCE': 3,
 }
 
+export const PLAYER_EVENTS = {
+    'DEPLOY_TROOPS': 0,
+    'ATTACK': 1,
+}
+
 export class Game {
     next_id = 0; // Used To Assign New Player IDs
     // Game Details
@@ -24,7 +29,7 @@ export class Game {
     // Player
     current_player_turn = 0;
     players = [];
-    player_turn_max_duration = 15; // Seconds
+    player_turn_max_duration = 70; // Seconds
     current_turn_start = undefined
     // Data 
     continents = [];
@@ -186,9 +191,8 @@ export class Game {
                 player.deployable_troops -= 1
             }
         })
-        // console.log(this.territories)
-        this.Update()
-        this.GameServer.to(this.game_id).emit('update_territories', {territories: this.territories, players: this.players, continents: this.continents})
+        // this.GameServer.to(this.game_id).emit('update_territories', {territories: this.territories, players: this.players, continents: this.continents})
+        this.SendUpdateGameState()
     }
 
     countPlayerTerritories() {
@@ -283,6 +287,18 @@ export class Game {
             Flow: 
 
     */
+
+    // Sends Updated Game State To Clients
+    SendUpdateGameState() {
+        this.Update()
+        this.GameServer.to(this.game_id).emit('update_game_state', {
+            players: this.players,
+            territories: this.territories,
+            continents: this.continents,
+            game_state: this.game_state,
+        })
+    }
+
     CurrentPlayerTurnTimedOut() {
         const diff = UnixTimeSince(this.current_turn_start)
         if (diff > this.player_turn_max_duration) {
@@ -315,7 +331,7 @@ export class Game {
         // Update Player Values And Send
         this.players[this.current_player_turn].deployable_troops += newTroops
         this.players[this.current_player_turn].troops += newTroops
-        this.GameServer.emit('update_players', {players: this.players, reward: newTroops})
+        this.GameServer.to(this.game_id).emit('reward_troops', {players: this.players, reward: newTroops})
     }
 
     IncrementTurn() {
@@ -330,9 +346,37 @@ export class Game {
         }
     }
 
+    /* 
+        Payload = {
+            PlayerId,
+            Type,
+            Data: {
+                ...
+            }
+        }
+    */    
+    PlayerEvent(payload) {
+        console.log(`New Player Event: ${payload}`)
+        try {
+            if (payload.type == PLAYER_EVENTS.DEPLOY_TROOPS) {
+                player = this.players[res.player_id]
+                territory = this.territories[res.territory_id]
+                if (res.deploy_troops <= player.deployable_troops && territory.player == player.id) {
+                    territory.troops += res.deploy_troops
+                    this.SendUpdateGameState();
+                }
+            } 
+            else if (payload.type == PLAYER_EVENTS.ATTACK) {
+
+            }
+        } catch(err) {
+            console.log(`Error: Game ${this.game_id} Unable To Process Payload`)
+        }
+    }
+
     async Run(GameServer) {
         this.GameServer = GameServer
-        const FPS = 60 
+        const FPS = 30 
         const ClockRate =  1000/FPS // ms/FPS
         // Set Current Turn Timer
         this.current_turn_start = GetUnixTime();

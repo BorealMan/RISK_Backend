@@ -156,6 +156,25 @@ io.on('connection', (socket) => {
             if (CONFIG.DEBUG) console.log(`Error: Starting Game: ${err}\n`)
         }
     })
+
+    /* 
+        API To Send Players Events (Maps To Game Id)
+            Gameid,
+            Payload = {
+                PlayerId: Player
+                Type: Event Type
+                Data: {
+                    ...
+                }
+            }
+    */
+    socket.on('player_event', (gameid, payload) => {
+        try {
+            GAMES[gameid].PlayerEvent(payload)
+        } catch (err) {
+            if (CONFIG.DEBUG) console.log(`Game Event Error: ${err}\n`)
+        }
+    })
 })
 
 
