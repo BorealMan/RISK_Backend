@@ -156,6 +156,17 @@ export class Game {
         this.territories[id].player = playerID;
     }
 
+    isTerritoryConnected(t_index1, t_index2) {
+        const territory = this.territories[t_index1]
+        console.log(territory.connections)
+        for (let i = 0; i < territory.connections.length; i++) {
+            if (t_index2 == territory.connections[i]) {
+                return true
+            }
+        }
+        return false
+    }
+
     // Before Start Of Game, Assign Each Territory and All Player Troops To A Territory
     randomlyAssignTerritories() {
         const territories = Array.from(Array(42).keys())
@@ -368,6 +379,27 @@ export class Game {
             }
         } 
         else if (payload.type == PLAYER_EVENTS.ATTACK) {
+            const player = this.players[payload.player_id]
+            const attack_from_territory = this.territories[payload.attack_from]
+            const attack_to_territory = this.territories[payload.attack_to] 
+            // Checks And Returns Error
+            if (!this.isTerritoryConnected(payload.attack_to, payload.attack_from)) {
+                console.log(`Err: Territories Not Connected: ${payload.attack_to} - ${payload.attack_from}`)
+                return {err: "Territories Not Connected"}
+            }
+            if (player.id != attack_from_territory.player) {
+                console.log(`Err: Attacking Player Doesn't Own Territory`)
+                return {err: "Attacking Player Doesn't Own Territory"}
+            }
+            if (player.id == attack_to_territory.player) {
+                console.log("Err: Player Can't Attack Their Own Territory")
+                return {err: "Player Can't Attack Their Own Territory"}
+            }
+            // Implement Here
+
+            return this.SendUpdateGameState();
+        }
+        else if (payload.type == PLAYER_EVENTS.REINFORCE) {
 
         }
         else if (payload.type == PLAYER_EVENTS.NEXT_PHASE) {
