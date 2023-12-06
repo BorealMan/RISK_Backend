@@ -184,6 +184,19 @@ app.get('/', (req, res) => {
     res.status(200).send(`<h1>Backend Is Working</h1>`)
 })
 
+app.get('/games', (req, res) => {
+    const games = []
+    let keys = Object.keys(GAMES)
+    keys.forEach(key => {
+        const game = GAMES[key]
+        if (game.game_state === GAMESTATE.FILLING_LOBBY) {
+            const tmp = {id: key, players: game.players.length}
+            games.push(tmp)
+        }
+    })
+    return res.status(200).json({games: games})
+})
+
 
 server.listen(CONFIG.PORT, () => {
     console.log(`Listening at http://localhost:${CONFIG.PORT}`)

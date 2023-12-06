@@ -20,6 +20,11 @@ export const PLAYER_EVENTS = {
     'DEPLOY_TROOPS': 0,
     'ATTACK': 1,
     'NEXT_PHASE': 2,
+    'REINFORCE': 3,
+}
+
+export const ANIMATION_EVENTS = {
+    'ATTACK_FROM_SELECTED': 0,
 }
 
 export class Game {
@@ -103,7 +108,7 @@ export class Game {
 
     removePlayer(id) {
         try {
-            if (this.game_state !== GAMESTATE.FILLING_LOBBY) return { err: "Cannot Remove Players Anymore" }
+            // if (this.game_state !== GAMESTATE.FILLING_LOBBY) return { err: "Cannot Remove Players Anymore" }
             if (this.players.length < 1) return { err: "No Players" }
             const index = this.players.findIndex(player => {
                 return player.id == id;
@@ -357,6 +362,35 @@ export class Game {
         }
     }
 
+    // Rolling 
+    RollDice() {
+        return Math.floor(Math.random() * 6);
+    }
+
+    Battle(attacking_troops, defending_troops) {
+        const total_rolls = Math.max(attacking_troops, defending_troops)
+
+    
+        const attackers_roll = this.RollDice()
+        const defenders_roll = this.RollDice()
+        
+        const attacker_wins = attackers_roll > defenders_roll
+    }
+
+    // Automated Battles
+    Blitz(attacking_territory, defending_territory, attacking_troops) {
+        const attacking_player = this.players[attacking_territory.player]
+        const defending_player = this.players[defending_territory.player]
+        const defending_troops = defending_territory.troops
+        console.log(`Blitz\nAttacking Troops: ${attacking_troops}\nDefending Troops: ${defending_troops}`)
+        if (attacking_troops > defending_troops) {
+            defending_territory.player = attacking_player.id
+            defending_territory.troops = attacking_troops
+
+            defending_player.troops -= defending_troops
+        }
+    }
+
     /* 
         Payload = {
             PlayerId,
@@ -382,6 +416,8 @@ export class Game {
             const player = this.players[payload.player_id]
             const attack_from_territory = this.territories[payload.attack_from]
             const attack_to_territory = this.territories[payload.attack_to] 
+            // Troops
+            const attacking_troops = payload.attacking_troops
             // Checks And Returns Error
             if (!this.isTerritoryConnected(payload.attack_to, payload.attack_from)) {
                 console.log(`Err: Territories Not Connected: ${payload.attack_to} - ${payload.attack_from}`)
@@ -396,7 +432,12 @@ export class Game {
                 return {err: "Player Can't Attack Their Own Territory"}
             }
             // Implement Here
-
+            // Do One Battle
+            if(payload.battle) {
+                
+            } else {
+                this.Blitz(attack_from_territory, attack_to_territory, attacking_troops)
+            }            
             return this.SendUpdateGameState();
         }
         else if (payload.type == PLAYER_EVENTS.REINFORCE) {
@@ -418,6 +459,10 @@ export class Game {
         }
     }
 
+    animationEvent(payload) {
+        console.log(`New Animation Event: ${payload}`)
+    }
+
     async Run(GameServer) {
         this.GameServer = GameServer
         const FPS = 30 
@@ -432,6 +477,7 @@ export class Game {
 
         // Game Logic - Game Clock
         while(this.game_state !== GAMESTATE.COMPLETED) {
+            if (this.players.length <= 0) break;
             this.ProcessTurn()
             await Sleep(ClockRate)
         }
