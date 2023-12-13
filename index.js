@@ -190,7 +190,7 @@ app.get('/games', (req, res) => {
     keys.forEach(key => {
         const game = GAMES[key]
         if (game.game_state === GAMESTATE.FILLING_LOBBY) {
-            const tmp = {id: key, players: game.players.length}
+            const tmp = {id: key, players: game.players.length, host: game.players[0].username}
             games.push(tmp)
         }
     })

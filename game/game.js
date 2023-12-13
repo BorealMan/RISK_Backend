@@ -362,9 +362,8 @@ export class Game {
         }
     }
 
-    // Rolling 
-    RollDice() {
-        return Math.floor(Math.random() * 6);
+    RollDice(n) {
+        return Math.floor(Math.random() * n);
     }
 
     Battle(attacking_troops, defending_troops) {
@@ -377,19 +376,91 @@ export class Game {
         const attacker_wins = attackers_roll > defenders_roll
     }
 
-    // Automated Battles
     Blitz(attacking_territory, defending_territory, attacking_troops) {
         const attacking_player = this.players[attacking_territory.player]
         const defending_player = this.players[defending_territory.player]
-        const defending_troops = defending_territory.troops
+        let defending_troops = defending_territory.troops
         console.log(`Blitz\nAttacking Troops: ${attacking_troops}\nDefending Troops: ${defending_troops}`)
-        if (attacking_troops > defending_troops) {
-            defending_territory.player = attacking_player.id
-            defending_territory.troops = attacking_troops
 
-            defending_player.troops -= defending_troops
+        // Remove Attacking Troops From Current Territory
+        attacking_territory.troops -= attacking_troops
+        // Number of Troops To Gaurantee A Win
+        const attackingTroopsNeeded = Math.ceil(defending_troops / .4167) + 1
+        const gauranteedAttackerWin = attacking_troops >= attackingTroopsNeeded
+
+        console.log(`Attacking Troops Needed: ${attackingTroopsNeeded} - Gauranteed Attacker Wins: ${gauranteedAttackerWin}`)
+
+        let attacker_losses = 0
+        let defender_losses = 0
+        while(true) {
+            console.log(`Battle Results: Attacking: ${attacking_troops} Defending: ${defending_troops}`)
+            console.log(`Attacking Losses: ${attacker_losses} Defending Losses: ${defender_losses}`)
+            const roll = this.RollDice(10000)
+            console.log(`Blitz Roll: ${roll}`)
+            // Defender Wins Roll
+            if (roll > 4167) {
+                attacking_troops--;
+                attacker_losses++;
+            }
+            // Attacker Wins Roll
+            else {
+                defending_troops--;
+                defender_losses++;
+            }
+            //  Attacker Wins
+            if (defending_troops <= 0) {
+               defending_territory.player = attacking_player.id
+               defending_territory.troops = attacking_troops
+               attacking_player.troops -= attacker_losses
+               defending_player.troops -= defender_losses
+               return 
+            }
+            // Defender Wins
+            if (attacking_troops <= 0) {
+                if (gauranteedAttackerWin) {
+                    defending_territory.player = attacking_player.id
+                    defending_territory.troops = 1
+                    defending_player.troops -= defending_troops
+                    attacking_player.troops -= attacker_losses - 1
+                    return
+                }
+                // Adjust Troops
+                defending_territory.troops -= defender_losses
+                defending_player.troops -= defender_losses
+                attacking_player.troops -= attacker_losses
+                return
+            }
         }
     }
+
+    // Reinforce Functions
+    // BFS Search, Finds A Valid Path Between Territories
+    CalculateReinforcePath(player_id, from_territory, to_territory, visited=[]) {
+        console.log(`CalculateReinforcePath: from: ${from_territory} to ${to_territory} visited: ${visited}`)
+        visited.push(from_territory)
+        const f_territory = this.territories[from_territory]
+        // const t_territory = this.territories[to_territory]
+        let result = false
+        for(let conn of f_territory.connections) {
+            console.log(`Compare connection ${conn} to ${to_territory}`)
+            if (this.territories[conn].player !== player_id) {
+                console.log(`Player Doesn't Own: ${conn}`)
+                continue;
+            }
+            if (conn == to_territory) {
+                console.log(`Complete!`)
+                // visited.push(to_territory)
+                return [true, visited]
+            }
+            const search = visited.find(element => element == conn) 
+            // console.log(`Search: ${search}`)
+            if (search == undefined) {
+                result = this.CalculateReinforcePath(player_id, conn, to_territory, visited)
+                if (result) break;
+            }
+        }
+        return result
+    }  
 
     /* 
         Payload = {
@@ -431,16 +502,23 @@ export class Game {
                 console.log("Err: Player Can't Attack Their Own Territory")
                 return {err: "Player Can't Attack Their Own Territory"}
             }
-            // Implement Here
-            // Do One Battle
+            // Logic
             if(payload.battle) {
-                
+                // TODO -- Implement Single Battles
             } else {
                 this.Blitz(attack_from_territory, attack_to_territory, attacking_troops)
             }            
             return this.SendUpdateGameState();
         }
         else if (payload.type == PLAYER_EVENTS.REINFORCE) {
+            const player = this.players[payload.player]
+            const to_territory = this.territories[payload.to]
+            const from_territory = this.territories[payload.from]
+            if (player.id != to_territory.player || player.id != from_territory.player) {
+                console.log(`Err: Player Must Own Both Territories\nPlayer${payload.player} ${to_territory.player} ${to_territory.player}`)
+                return {err: "Player Must Own Both Territories"}
+            }
+
 
         }
         else if (payload.type == PLAYER_EVENTS.NEXT_PHASE) {

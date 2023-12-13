@@ -249,7 +249,7 @@ export const Territories = [
         player: undefined,
         name: "East Africa",
         troops: 0,
-        connections: [20, 21, 23, 25, 28]
+        connections: [20, 21, 22, 23, 25, 28]
     },
     {
         id: 25,
